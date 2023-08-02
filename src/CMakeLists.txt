@@ -1,0 +1,3 @@
+add_library(vcdiff_incremental STATIC vcdiff_incremental.c)
+target_link_libraries(vcdiff_incremental PUBLIC tiny-vcdiff)
+target_include_directories(vcdiff_incremental PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
