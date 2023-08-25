@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
 
     FILE* new_file = fopen(argv[4], "rb");
 
-    open_vcdiff::HashedDictionary dictionary(input_data, input_stat.st_size);
+    open_vcdiff::HashedDictionary dictionary(input_data, input_stat.st_size, false);
     dictionary.Init();
 
     open_vcdiff::VCDiffStreamingEncoder encoder(&dictionary, open_vcdiff::VCD_FORMAT_INTERLEAVED, false);

@@ -1,6 +1,6 @@
 [submodule "third_party/open-vcdiff"]
 	path = third_party/open-vcdiff
-	url = https://github.com/google/open-vcdiff
+	url = https://github.com/JeWe37/open-vcdiff.git
 [submodule "third_party/tiny-vcdiff"]
 	path = third_party/tiny-vcdiff
 	url = https://github.com/jue89/tiny-vcdiff
