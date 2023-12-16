@@ -24,9 +24,9 @@ struct source_stream {
     struct target_stream* target;
 };
 
-int free_data(struct target_stream* target, struct source_stream* source);
+int free_data(struct target_stream target[static 1], struct source_stream source[static 1]);
 
-int read_range(struct target_stream* target, size_t offset, size_t len, uint8_t* dest);
+int read_range(struct target_stream target[static 1], size_t offset, size_t len, uint8_t dest[static len]);
 
-int load_diff(struct target_stream* target, struct source_stream* source, int fd_source, int fd_delta);
+int load_diff(struct target_stream target[static 1], struct source_stream source[static 1], int fd_source, int fd_delta);
 #endif

@@ -22,8 +22,7 @@ static int append_block(struct target_stream* target, size_t pos, size_t size, u
     }
 
     struct block* block = &target->blocks[target->num_blocks++];
-    block->pos = pos;
-    block->size = size;
+    *block = (struct block){ .pos = pos, .size = size };
     // make a copy of data
     if (target->source_flag) {
         block->data = *(uint8_t**)data;
@@ -41,7 +40,7 @@ static int is_in_source(struct source_stream* source, uint8_t* data) {
     return data >= source->data && data < source->data + source->len;
 }
 
-int free_data(struct target_stream* target, struct source_stream* source) {
+int free_data(struct target_stream target[static 1], struct source_stream source[static 1]) {
     for (size_t i = 0; i < target->num_blocks; i++) {
         uint8_t* data = target->blocks[i].data;
         if (!is_in_source(source, data))
@@ -51,7 +50,7 @@ int free_data(struct target_stream* target, struct source_stream* source) {
     return munmap(source->data, source->len);
 }
 
-static int _target_write (void *dev, uint8_t *data, size_t offset, size_t len) {
+static int _target_write(void *dev, uint8_t *data, size_t offset, size_t len) {
 	struct target_stream *target = (struct target_stream *) dev;
 
 	if (target->offset != offset)
@@ -83,14 +82,11 @@ static const vcdiff_driver_t target_driver = {
 static int _source_read (void *dev, uint8_t *dest, size_t offset, size_t len) {
     struct source_stream *source = (struct source_stream *) dev;
 
-    source->target->source_flag = 1;
-
     if (offset + len > source->len)
         return -EINVAL;
 
-    uint8_t* cur_data = source->data + offset;
-
-    memcpy(dest, &cur_data, sizeof(uint8_t*));
+    source->target->source_flag = 1;
+    *(uint8_t**)dest = source->data + offset;
 
 	return 0;
 }
@@ -99,7 +95,7 @@ static const vcdiff_driver_t source_driver = {
 	.read = _source_read
 };
 
-int read_range(struct target_stream* target, size_t offset, size_t len, uint8_t* dest) {
+int read_range(struct target_stream target[static 1], size_t offset, size_t len, uint8_t dest[static len]) {
     // binary search for block containing start of range
     size_t left = 0;
     size_t right = target->num_blocks;
@@ -136,23 +132,21 @@ int read_range(struct target_stream* target, size_t offset, size_t len, uint8_t*
     return len;
 }
 
-int load_diff(struct target_stream* target, struct source_stream* source, int fd_source, int fd_delta) {
+int load_diff(struct target_stream target[static 1], struct source_stream source[static 1], int fd_source, int fd_delta) {
     // mmap source file
     struct stat stat_source;
     if (fstat(fd_source, &stat_source) < 0)
         return -errno;
 
     // init source stream
-    source->len = stat_source.st_size;
-    source->data = mmap(NULL, stat_source.st_size, PROT_READ, MAP_PRIVATE, fd_source, 0);
-    source->target = target;
+    *source = (struct source_stream){ .len = stat_source.st_size, .data = mmap(NULL, stat_source.st_size, PROT_READ, MAP_PRIVATE, fd_source, 0), .target = target };
+
+    if (source->data == MAP_FAILED)
+        return -errno;
     
     // init target stream
-    target->source_flag = 0;
-    target->offset = 0;
-    target->num_blocks = 0;
-    target->capacity = 16;
-    target->blocks = malloc(target->capacity * sizeof(struct block));
+    *target = (struct target_stream){ .capacity = 16, .blocks = malloc(16 * sizeof(struct block)) };
+
     if (target->blocks == NULL)
         return -ENOMEM;
 
